@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/sionpixley/inquiry/pkg/inquiry"
 )
@@ -14,15 +15,18 @@ type Example struct {
 }
 
 func main() {
-	err := inquiry.Connect[Example]("example.csv", false)
-	if err != nil {
-		log.Fatalln(err.Error())
+	errs := inquiry.Connect[Example]("example.csv", false)
+	if errs != nil {
+		for _, e := range errs {
+			log.Println(e.Error())
+		}
+		os.Exit(1)
 	}
 	defer inquiry.Close()
 
 	row := inquiry.Database.QueryRow("SELECT * FROM Example;")
 	var example Example
-	err = row.Scan(&example.Id, &example.Name, &example.Test)
+	err := row.Scan(&example.Id, &example.Name, &example.Test)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
