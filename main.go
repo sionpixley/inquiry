@@ -15,7 +15,7 @@ type Example struct {
 }
 
 func main() {
-	errs := inquiry.Connect[Example]("example.csv", false)
+	errs := inquiry.Connect[Example]("example.csv")
 	if errs != nil {
 		for _, e := range errs {
 			log.Println(e.Error())
