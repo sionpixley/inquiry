@@ -64,86 +64,13 @@ func buildCreateTableStatement[T any]() (string, error) {
 	return statement, nil
 }
 
-// func convertToStruct[T any](row []string, zeroValue T) (T, error) {
-// 	t := reflect.TypeOf(zeroValue)
-// 	v := reflect.ValueOf(zeroValue)
-
-// 	if t.Kind() != reflect.Struct {
-// 		return zeroValue, errors.New(_NOT_A_STRUCT_ERROR)
-// 	} else if t.NumField() != len(row) {
-// 		return zeroValue, errors.New(_MISMATCH_NUM_OF_COLUMNS_ERROR)
-// 	}
-
-// 	for i := range t.NumField() {
-// 		field := t.Field(i)
-// 		f := v.FieldByName(field.Name)
-// 		switch {
-// 		case field.Type.Kind() == reflect.Bool:
-// 			b, err := strconv.ParseBool(row[i])
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetBool(b)
-// 		case field.Type.Kind() == reflect.Float32:
-// 			float, err := strconv.ParseFloat(row[i], 32)
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetFloat(float)
-// 		case field.Type.Kind() == reflect.Float64:
-// 			float, err := strconv.ParseFloat(row[i], 64)
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetFloat(float)
-// 		case field.Type.Kind() == reflect.Int:
-// 			integer, err := strconv.Atoi(row[i])
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetInt(int64(integer))
-// 		case field.Type.Kind() == reflect.Int8:
-// 			integer, err := strconv.ParseInt(row[i], 10, 8)
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetInt(integer)
-// 		case field.Type.Kind() == reflect.Int16:
-// 			integer, err := strconv.ParseInt(row[i], 10, 16)
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetInt(integer)
-// 		case field.Type.Kind() == reflect.Int32:
-// 			integer, err := strconv.ParseInt(row[i], 10, 32)
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetInt(integer)
-// 		case field.Type.Kind() == reflect.Int64:
-// 			integer, err := strconv.ParseInt(row[i], 10, 64)
-// 			if err != nil {
-// 				return zeroValue, err
-// 			}
-// 			f.SetInt(integer)
-// 		// case field.Type.Kind() == reflect.Pointer:
-// 		case field.Type.Kind() == reflect.String:
-// 			f.SetString(row[i])
-// 		default:
-// 			return zeroValue, errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
-// 		}
-// 	}
-
-// 	return zeroValue, nil
-// }
-
-func createTable[T any]() error {
+func createTable[T any](csvFile *sql.DB) error {
 	createStatement, err := buildCreateTableStatement[T]()
 	if err != nil {
 		return err
 	}
 
-	_, err = Database.Exec(createStatement)
+	_, err = csvFile.Exec(createStatement)
 	return err
 }
 
@@ -172,44 +99,45 @@ func insert[T any](row []string, tx *sql.Tx) error {
 	return err
 }
 
-func insertRows[T any](csvFilePath string, hasHeaderRow bool) []error {
+func insertRows[T any](csvFile *sql.DB, csvFilePath string, options InquiryOptions) (*sql.DB, []error) {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
-		return []error{errors.New(_FILE_PATH_DOES_NOT_EXIST_ERROR)}
+		return nil, []error{errors.New(_FILE_PATH_DOES_NOT_EXIST_ERROR)}
 	} else if err != nil {
-		return []error{err}
+		return nil, []error{err}
 	}
 
 	file, err := os.Open(csvFilePath)
 	if err != nil {
-		return []error{err}
+		return nil, []error{err}
 	}
 	defer file.Close()
 
-	tx, err := Database.Begin()
+	tx, err := csvFile.Begin()
 	if err != nil {
-		return []error{err}
+		return nil, []error{err}
 	}
 	defer tx.Rollback()
 
 	wg := sync.WaitGroup{}
 	errs := make(chan error, 25)
 	reader := csv.NewReader(file)
+	reader.Comma = options.Delimiter
 	for {
 		// Skip first loop if there's a header row.
-		if hasHeaderRow {
+		if options.HasHeaderRow {
 			_, err = reader.Read()
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return []error{err}
+				return nil, []error{err}
 			}
-			hasHeaderRow = false
+			options.HasHeaderRow = false
 		} else {
 			row, err := reader.Read()
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return []error{err}
+				return nil, []error{err}
 			}
 
 			wg.Add(1)
@@ -238,13 +166,13 @@ func insertRows[T any](csvFilePath string, hasHeaderRow bool) []error {
 		for e := range errs {
 			es = append(es, e)
 		}
-		return es
+		return nil, es
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return []error{err}
+		return nil, []error{err}
 	}
 
-	return nil
+	return csvFile, nil
 }

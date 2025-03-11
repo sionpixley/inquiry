@@ -15,23 +15,27 @@ type Example struct {
 }
 
 func main() {
-	errs := inquiry.Connect[Example]("example.csv")
+	csvFile, errs := inquiry.Connect[Example]("example.csv")
 	if errs != nil {
 		for _, e := range errs {
 			log.Println(e.Error())
 		}
 		os.Exit(1)
 	}
-	defer inquiry.Close()
+	defer csvFile.Close()
 
-	row := inquiry.Database.QueryRow("SELECT * FROM Example;")
-	var example Example
-	err := row.Scan(&example.Id, &example.Name, &example.Test)
+	rows, err := csvFile.Query("SELECT * FROM Example WHERE Test > 80 ORDER BY Name ASC;")
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
-	fmt.Println(example.Id)
-	fmt.Println(example.Name)
-	fmt.Println(example.Test)
+	for rows.Next() {
+		var example Example
+		err = rows.Scan(&example.Id, &example.Name, &example.Test)
+		if err != nil {
+			log.Fatalln(err.Error())
+		}
+		fmt.Printf("%d %s %f", example.Id, example.Name, example.Test)
+		fmt.Println()
+	}
 }
