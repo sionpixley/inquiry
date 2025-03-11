@@ -81,6 +81,7 @@ func main() {
 		}
 		os.Exit(1)
 	}
+    // Don't forget to close the database.
 	defer csvFile.Close()
 
 	rows, err := csvFile.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
@@ -144,6 +145,7 @@ func main() {
 		}
 		os.Exit(1)
 	}
+    // Don't forget to close the database.
 	defer csvFile.Close()
 
 	rows, err := csvFile.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
