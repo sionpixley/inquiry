@@ -17,12 +17,12 @@ Inquiry is a Go package that converts a CSV file into an in-memory SQLite databa
 
 ```
 .
+├── CODE_OF_CONDUCT.md
 ├── LICENSE
 ├── README.md
-├── example.csv
+├── SECURITY.md
 ├── go.mod
 ├── go.sum
-├── main.go
 └── pkg
     └── inquiry
         ├── helpers.go
