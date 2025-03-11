@@ -35,11 +35,11 @@ Inquiry is a Go package that converts a CSV file into an in-memory SQLite databa
 
 ## How to use
 
-Using Inquiry is pretty simple: You "connect" to the CSV file and Inquiry will return a `*sql.DB` and a `[]error`. You can then use the returned `*sql.DB` to do any operations that you normally would do with a SQLite database.
+Using Inquiry is pretty simple: You "connect" to the CSV file and Inquiry will return a `*sql.DB` and a `[]error`. You can then use the returned `*sql.DB` to do any operations that you would normally do with a SQLite database.
 
 ### Examples
 
-You can connect to your CSV file with or without options (`Connect` or `ConnectWithOptions`). With options allows you specify your CSV file delimiter and whether the file has a header row or not. If you don't provide options, Inquiry will default the delimiter to a comma and assumes there is no header row.
+You can connect to your CSV file with or without options (`ConnectWithOptions` or just `Connect`). With options, you can specify your CSV delimiter and whether the file has a header row or not. If you don't provide options, Inquiry will default the delimiter to a comma and assumes there is no header row.
 
 #### Without options
 
