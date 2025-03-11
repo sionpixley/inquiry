@@ -59,45 +59,45 @@ You can connect to your CSV file with or without options (`Connect` or `ConnectW
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
+    "fmt"
+    "log"
+    "os"
 
-	"github.com/sionpixley/inquiry/pkg/inquiry"
+    "github.com/sionpixley/inquiry/pkg/inquiry"
 )
 
 type Example struct {
-	Id    int
-	Name  string
-	Value float64
+    Id    int
+    Name  string
+    Value float64
 }
 
 func main() {
     // 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
-	csvFile, errs := inquiry.Connect[Example]("example.csv")
-	if errs != nil {
-		for _, e := range errs {
-			log.Println(e.Error())
-		}
-		os.Exit(1)
-	}
+    csvFile, errs := inquiry.Connect[Example]("example.csv")
+    if errs != nil {
+        for _, e := range errs {
+            log.Println(e.Error())
+        }
+        os.Exit(1)
+    }
     // Don't forget to close the database.
-	defer csvFile.Close()
+    defer csvFile.Close()
 
-	rows, err := csvFile.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+    rows, err := csvFile.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
+    if err != nil {
+        log.Fatalln(err.Error())
+    }
 
-	for rows.Next() {
-		var example Example
-		err = rows.Scan(&example.Id, &example.Name, &example.Value)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-		fmt.Printf("%d %s %f", example.Id, example.Name, example.Value)
-		fmt.Println()
-	}
+    for rows.Next() {
+        var example Example
+        err = rows.Scan(&example.Id, &example.Name, &example.Value)
+        if err != nil {
+            log.Fatalln(err.Error())
+        }
+        fmt.Printf("%d %s %f", example.Id, example.Name, example.Value)
+        fmt.Println()
+    }
 }
 ```
 
@@ -118,49 +118,49 @@ Id|Name|Value
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
+    "fmt"
+    "log"
+    "os"
 
-	"github.com/sionpixley/inquiry/pkg/inquiry"
+    "github.com/sionpixley/inquiry/pkg/inquiry"
 )
 
 type Example struct {
-	Id    int
-	Name  string
-	Value float64
+    Id    int
+    Name  string
+    Value float64
 }
 
 func main() {
-	options := inquiry.InquiryOptions{
-		Delimiter:    '|',
-		HasHeaderRow: true,
-	}
+    options := inquiry.InquiryOptions{
+        Delimiter:    '|',
+        HasHeaderRow: true,
+    }
 
-	// 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
-	csvFile, errs := inquiry.ConnectWithOptions[Example]("example.csv", options)
-	if errs != nil {
-		for _, e := range errs {
-			log.Println(e.Error())
-		}
-		os.Exit(1)
-	}
+    // 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
+    csvFile, errs := inquiry.ConnectWithOptions[Example]("example.csv", options)
+    if errs != nil {
+        for _, e := range errs {
+            log.Println(e.Error())
+        }
+        os.Exit(1)
+    }
     // Don't forget to close the database.
-	defer csvFile.Close()
+    defer csvFile.Close()
 
-	rows, err := csvFile.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+    rows, err := csvFile.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
+    if err != nil {
+        log.Fatalln(err.Error())
+    }
 
-	for rows.Next() {
-		var example Example
-		err = rows.Scan(&example.Id, &example.Name, &example.Value)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
-		fmt.Printf("%d %s %f", example.Id, example.Name, example.Value)
-		fmt.Println()
-	}
+    for rows.Next() {
+        var example Example
+        err = rows.Scan(&example.Id, &example.Name, &example.Value)
+        if err != nil {
+            log.Fatalln(err.Error())
+        }
+        fmt.Printf("%d %s %f", example.Id, example.Name, example.Value)
+        fmt.Println()
+    }
 }
 ```
