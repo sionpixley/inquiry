@@ -101,6 +101,12 @@ func main() {
 }
 ```
 
+```
+// output
+4 happy 100.500000
+3 yo 90.300000
+```
+
 #### With options
 
 ```
@@ -163,4 +169,10 @@ func main() {
         fmt.Println()
     }
 }
+```
+
+```
+// output
+4 happy 100.500000
+3 yo 90.300000
 ```
