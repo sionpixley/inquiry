@@ -99,7 +99,7 @@ func insert[T any](row []string, tx *sql.Tx) error {
 	return err
 }
 
-func insertRows[T any](csvFile *sql.DB, csvFilePath string, options InquiryOptions) (*sql.DB, []error) {
+func insertRows[T any](csvFile *sql.DB, csvFilePath string, options CsvOptions) (*sql.DB, []error) {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
 		return nil, []error{errors.New(_FILE_PATH_DOES_NOT_EXIST_ERROR)}
 	} else if err != nil {
@@ -121,7 +121,9 @@ func insertRows[T any](csvFile *sql.DB, csvFilePath string, options InquiryOptio
 	wg := sync.WaitGroup{}
 	errs := make(chan error, 25)
 	reader := csv.NewReader(file)
-	reader.Comma = options.Delimiter
+	if int(options.Delimiter) != 0 {
+		reader.Comma = options.Delimiter
+	}
 	for {
 		// Skip first loop if there's a header row.
 		if options.HasHeaderRow {

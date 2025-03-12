@@ -8,8 +8,8 @@ import (
 	_ "github.com/ncruces/go-sqlite3/embed"
 )
 
-// InquiryOptions is a struct that allows you to configure how you connect to your CSV file.
-type InquiryOptions struct {
+// CsvOptions is a struct that allows you to configure how you connect to your CSV file.
+type CsvOptions struct {
 	Delimiter    rune `json:"delimiter"`
 	HasHeaderRow bool `json:"hasHeaderRow"`
 }
@@ -24,14 +24,14 @@ It assumes that there is no header row and that your file delimiter is a comma.
 If you need to customize these, please use the function ConnectWithOptions.
 */
 func Connect[T any](csvFilePath string) (*sql.DB, []error) {
-	return ConnectWithOptions[T](csvFilePath, InquiryOptions{Delimiter: ',', HasHeaderRow: false})
+	return ConnectWithOptions[T](csvFilePath, CsvOptions{Delimiter: ',', HasHeaderRow: false})
 }
 
-// ConnectWithOptions is a function that takes the CSV file path and InquiryOptions in as parameters and returns two things:
+// ConnectWithOptions is a function that takes the CSV file path and CsvOptions in as parameters and returns two things:
 // A pointer to the in-memory SQLite database
 // and an error slice with the errors that happened during the creation of the database (cap of 25).
 // If no errors occur, the returned error slice will be nil.
-func ConnectWithOptions[T any](csvFilePath string, options InquiryOptions) (*sql.DB, []error) {
+func ConnectWithOptions[T any](csvFilePath string, options CsvOptions) (*sql.DB, []error) {
 	csvFile, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		return nil, []error{err}

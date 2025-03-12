@@ -110,6 +110,15 @@ func main() {
 
 #### With options
 
+The options are set using a struct: `CsvOptions`. Please see below for the definition of the `CsvOptions` struct and an example of using it.
+
+```
+type CsvOptions struct {
+    Delimiter    rune `json:"delimiter"`
+    HasHeaderRow bool `json:"hasHeaderRow"`
+}
+```
+
 ```
 // example.csv
 
@@ -139,7 +148,7 @@ type Example struct {
 }
 
 func main() {
-    options := inquiry.InquiryOptions{
+    options := inquiry.CsvOptions{
         Delimiter:    '|',
         HasHeaderRow: true,
     }
