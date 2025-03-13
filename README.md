@@ -199,7 +199,7 @@ func main() {
 
 To create a new table from a CSV file and add it to an existing SQLite database use the `CreateTable` or `CreateTableWithOptions` function.
 
-With options, you can specify your CSV delimiter and whether the file has a header row or not. If you don't provide options, Inquiry will default the delimiter to a comma and assumes there is no header row.
+With options, you can specify your CSV delimiter and whether the file has a header row or not. If you don't provide options, Inquiry will default the delimiter to a comma and assume there is no header row.
 
 This works on in-memory databases as well as databases that persist to disk.
 
