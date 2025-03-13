@@ -64,13 +64,13 @@ func buildCreateTableStatement[T any]() (string, error) {
 	return statement, nil
 }
 
-func createTable[T any](csvFile *sql.DB) error {
+func createTable[T any](db *sql.DB) error {
 	createStatement, err := buildCreateTableStatement[T]()
 	if err != nil {
 		return err
 	}
 
-	_, err = csvFile.Exec(createStatement)
+	_, err = db.Exec(createStatement)
 	return err
 }
 
@@ -99,7 +99,7 @@ func insert[T any](row []string, tx *sql.Tx) error {
 	return err
 }
 
-func insertRows[T any](csvFile *sql.DB, csvFilePath string, options CsvOptions) (*sql.DB, []error) {
+func insertRows[T any](db *sql.DB, csvFilePath string, options CsvOptions) (*sql.DB, []error) {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
 		return nil, []error{errors.New(_FILE_PATH_DOES_NOT_EXIST_ERROR)}
 	} else if err != nil {
@@ -112,7 +112,7 @@ func insertRows[T any](csvFile *sql.DB, csvFilePath string, options CsvOptions) 
 	}
 	defer file.Close()
 
-	tx, err := csvFile.Begin()
+	tx, err := db.Begin()
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -176,5 +176,5 @@ func insertRows[T any](csvFile *sql.DB, csvFilePath string, options CsvOptions) 
 		return nil, []error{err}
 	}
 
-	return csvFile, nil
+	return db, nil
 }
