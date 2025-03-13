@@ -197,7 +197,7 @@ func main() {
 
 ### Creating a new table from a CSV file and adding it to an existing SQLite database
 
-To create a new table from a CSV file and add it to an existing SQLite database use the `CreateTable` or `CreateTableWithOptions` function.
+To create a new table from a CSV file and add it to an existing SQLite database, use the `CreateTable` or `CreateTableWithOptions` function.
 
 With options, you can specify your CSV delimiter and whether the file has a header row or not. If you don't provide options, Inquiry will default the delimiter to a comma and assume there is no header row.
 
