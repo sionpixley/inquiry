@@ -27,16 +27,16 @@ func buildCreateTableStatement[T any]() (string, error) {
 		return "", errors.New(_NOT_A_STRUCT_ERROR)
 	}
 
-	statement := "CREATE TABLE " + t.Name() + "("
+	statement := "CREATE TABLE '" + t.Name() + "'('"
 	for i := range t.NumField() {
 		field := t.Field(i)
 		switch {
 		case field.Type.Kind() == reflect.Bool:
-			statement += field.Name + " INTEGER NOT NULL CHECK(" + field.Name + " IN (0,1)),"
+			statement += field.Name + "' INTEGER NOT NULL CHECK('" + field.Name + "' IN (0,1)),'"
 		case field.Type.Kind() == reflect.Float32:
 			fallthrough
 		case field.Type.Kind() == reflect.Float64:
-			statement += field.Name + " REAL NOT NULL,"
+			statement += field.Name + "' REAL NOT NULL,'"
 		case field.Type.Kind() == reflect.Int:
 			fallthrough
 		case field.Type.Kind() == reflect.Int8:
@@ -46,18 +46,18 @@ func buildCreateTableStatement[T any]() (string, error) {
 		case field.Type.Kind() == reflect.Int32:
 			fallthrough
 		case field.Type.Kind() == reflect.Int64:
-			statement += field.Name + " INTEGER NOT NULL,"
+			statement += field.Name + "' INTEGER NOT NULL,'"
 		// case field.Type.Kind() == reflect.Pointer:
 		case field.Type.Kind() == reflect.String:
-			statement += field.Name + " TEXT NOT NULL,"
+			statement += field.Name + "' TEXT NOT NULL,'"
 		default:
 			return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
 		}
 	}
-	if strings.HasSuffix(statement, "(") {
+	if strings.HasSuffix(statement, "('") {
 		return "", errors.New(_NO_FIELDS_ERROR)
 	} else {
-		statement = strings.TrimSuffix(statement, ",")
+		statement = strings.TrimSuffix(statement, ",'")
 	}
 
 	statement += ");"
