@@ -38,7 +38,7 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
 
 ## How to use
 
-Using Inquiry is pretty simple: You "connect" to the CSV file and Inquiry will return a `*sql.DB` and a `[]error`. You can then use the returned `*sql.DB` to do any operations that you would normally do with a SQLite database.
+Using Inquiry is pretty simple: You "connect" to the CSV file and Inquiry will return a `*sql.DB` and an `error`. You can then use the returned `*sql.DB` to do any operations that you would normally do with a SQLite database.
 
 You can also create new tables from CSV files and add them to an existing SQLite database (in-memory or not). 
 
@@ -80,13 +80,9 @@ type Example struct {
 }
 
 func main() {
-    // 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
-    db, errs := inquiry.Connect[Example]("example.csv")
-    if errs != nil {
-        for _, e := range errs {
-            log.Println(e.Error())
-        }
-        os.Exit(1)
+    db, err := inquiry.Connect[Example]("example.csv")
+    if err != nil {
+        log.Fatalln(err.Error())
     }
     // Don't forget to close the database.
     defer db.Close()
@@ -159,14 +155,10 @@ func main() {
         Delimiter:    '|',
         HasHeaderRow: true,
     }
-
-    // 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
-    db, errs := inquiry.ConnectWithOptions[Example]("example.csv", options)
-    if errs != nil {
-        for _, e := range errs {
-            log.Println(e.Error())
-        }
-        os.Exit(1)
+    
+    db, err := inquiry.ConnectWithOptions[Example]("example.csv", options)
+    if err != nil {
+        log.Fatalln(err.Error())
     }
     // Don't forget to close the database.
     defer db.Close()
@@ -252,25 +244,17 @@ func main() {
         Delimiter:    '|',
         HasHeaderRow: true,
     }
-
-    // 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
-    db, errs := inquiry.ConnectWithOptions[Example]("example.csv", options)
-    if errs != nil {
-        for _, e := range errs {
-            log.Println(e.Error())
-        }
-        os.Exit(1)
+    
+    db, err := inquiry.ConnectWithOptions[Example]("example.csv", options)
+    if err != nil {
+        log.Fatalln(err.Error())
     }
     // Don't forget to close the database.
     defer db.Close()
-
-    // 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
-    errs = inquiry.CreateTable[Test](db, "test.csv")
-    if errs != nil {
-        for _, e := range errs {
-            log.Println(e.Error())
-        }
-        os.Exit(1)
+    
+    err = inquiry.CreateTable[Test](db, "test.csv")
+    if err != nil {
+        log.Fatalln(err.Error())
     }
 
     rows, err := db.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
@@ -342,8 +326,7 @@ import (
     "log"
     "os"
 
-    _ "github.com/ncruces/go-sqlite3/driver"
-    _ "github.com/ncruces/go-sqlite3/embed"
+    _ "github.com/mattn/go-sqlite3"
     "github.com/sionpixley/inquiry/pkg/inquiry"
 )
 
@@ -370,14 +353,10 @@ func main() {
         Delimiter:    ';',
         HasHeaderRow: false,
     }
-
-    // 'errs' is a []error with a cap of 25. If there are no errors, then 'errs' will be nil.
-    errs := inquiry.CreateTableWithOptions[Test](db, "test.csv", options)
-    if errs != nil {
-        for _, e := range errs {
-            log.Println(e.Error())
-        }
-        os.Exit(1)
+    
+    err = inquiry.CreateTableWithOptions[Test](db, "test.csv", options)
+    if err != nil {
+        log.Fatalln(err.Error())
     }
 
     rows, err := db.Query("SELECT * FROM Example WHERE Value > 80 ORDER BY Name ASC;")
