@@ -8,7 +8,6 @@ import (
 	"os"
 	"reflect"
 	"strings"
-	"sync"
 )
 
 const (
@@ -118,8 +117,7 @@ func insertRows[T any](db *sql.DB, csvFilePath string, options CsvOptions) (*sql
 	}
 	defer tx.Rollback()
 
-	wg := sync.WaitGroup{}
-	errs := make(chan error, 25)
+	errs := []error{}
 	reader := csv.NewReader(file)
 	if int(options.Delimiter) != 0 {
 		reader.Comma = options.Delimiter
@@ -142,33 +140,17 @@ func insertRows[T any](db *sql.DB, csvFilePath string, options CsvOptions) (*sql
 				return nil, []error{err}
 			}
 
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				err = insert[T](row, tx)
-				if err != nil {
-					select {
-					// Only puts error in the channel if it can (not full).
-					case errs <- err:
-						return
-					default:
-						// Do nothing with error because channel is full.
-						return
-					}
+			err = insert[T](row, tx)
+			if err != nil {
+				if len(errs) < 25 {
+					errs = append(errs, err)
 				}
-			}()
+			}
 		}
 	}
 
-	wg.Wait()
-	close(errs)
-
 	if len(errs) > 0 {
-		es := []error{}
-		for e := range errs {
-			es = append(es, e)
-		}
-		return nil, es
+		return nil, errs
 	}
 
 	err = tx.Commit()
