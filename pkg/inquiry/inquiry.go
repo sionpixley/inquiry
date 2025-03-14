@@ -38,12 +38,12 @@ func ConnectWithOptions[T any](csvFilePath string, options CsvOptions) (*sql.DB,
 		return nil, []error{err}
 	}
 
-	err = createTable[T](db)
+	t, err := createTable[T](db)
 	if err != nil {
 		return nil, []error{err}
 	}
 
-	return insertRows[T](db, csvFilePath, options)
+	return insertRows(db, csvFilePath, options, t)
 }
 
 /*
@@ -64,11 +64,11 @@ func CreateTable[T any](db *sql.DB, csvFilePath string) []error {
 // It returns an error slice with the errors that happened during the creation of the table (cap of 25).
 // If no errors occur, the returned error slice will be nil.
 func CreateTableWithOptions[T any](db *sql.DB, csvFilePath string, options CsvOptions) []error {
-	err := createTable[T](db)
+	t, err := createTable[T](db)
 	if err != nil {
 		return []error{err}
 	}
 
-	_, errs := insertRows[T](db, csvFilePath, options)
+	_, errs := insertRows(db, csvFilePath, options, t)
 	return errs
 }
