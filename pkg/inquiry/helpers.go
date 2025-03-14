@@ -73,7 +73,7 @@ func createTable[T any](db *sql.DB) (reflect.Type, error) {
 	return t, err
 }
 
-func insert(row []string, tx *sql.Tx, t reflect.Type) error {
+func insert(tx *sql.Tx, row []string, t reflect.Type) error {
 	if t.Kind() != reflect.Struct {
 		return errors.New(_NOT_A_STRUCT_ERROR)
 	}
@@ -95,7 +95,7 @@ func insert(row []string, tx *sql.Tx, t reflect.Type) error {
 	return err
 }
 
-func insertRows(db *sql.DB, csvFilePath string, options CsvOptions, t reflect.Type) (*sql.DB, error) {
+func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptions) (*sql.DB, error) {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
 		return nil, errors.New(_FILE_PATH_DOES_NOT_EXIST_ERROR)
 	} else if err != nil {
@@ -136,7 +136,7 @@ func insertRows(db *sql.DB, csvFilePath string, options CsvOptions, t reflect.Ty
 				return nil, err
 			}
 
-			err = insert(row, tx, t)
+			err = insert(tx, row, t)
 			if err != nil {
 				return nil, err
 			}

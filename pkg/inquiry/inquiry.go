@@ -40,7 +40,7 @@ func ConnectWithOptions[T any](csvFilePath string, options CsvOptions) (*sql.DB,
 		return nil, err
 	}
 
-	return insertRows(db, csvFilePath, options, t)
+	return insertRows(db, csvFilePath, t, options)
 }
 
 /*
@@ -64,6 +64,6 @@ func CreateTableWithOptions[T any](db *sql.DB, csvFilePath string, options CsvOp
 		return err
 	}
 
-	_, errs := insertRows(db, csvFilePath, options, t)
+	_, errs := insertRows(db, csvFilePath, t, options)
 	return errs
 }
