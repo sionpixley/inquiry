@@ -23,16 +23,23 @@ func buildCreateTableStatement(t reflect.Type) (string, error) {
 		return "", errors.New(_NOT_A_STRUCT_ERROR)
 	}
 
-	statement := "CREATE TABLE '" + t.Name() + "'('"
+	builder := strings.Builder{}
+	builder.WriteString("CREATE TABLE '")
+	builder.WriteString(t.Name())
+	builder.WriteString("'('")
 	for i := range t.NumField() {
 		field := t.Field(i)
 		switch {
 		case field.Type.Kind() == reflect.Bool:
-			statement += field.Name + "' INTEGER NOT NULL CHECK('" + field.Name + "' IN (0,1)),'"
+			builder.WriteString(field.Name)
+			builder.WriteString("' INTEGER NOT NULL CHECK('")
+			builder.WriteString(field.Name)
+			builder.WriteString("' IN (0,1)),'")
 		case field.Type.Kind() == reflect.Float32:
 			fallthrough
 		case field.Type.Kind() == reflect.Float64:
-			statement += field.Name + "' REAL NOT NULL,'"
+			builder.WriteString(field.Name)
+			builder.WriteString("' REAL NOT NULL,'")
 		case field.Type.Kind() == reflect.Int:
 			fallthrough
 		case field.Type.Kind() == reflect.Int8:
@@ -42,14 +49,18 @@ func buildCreateTableStatement(t reflect.Type) (string, error) {
 		case field.Type.Kind() == reflect.Int32:
 			fallthrough
 		case field.Type.Kind() == reflect.Int64:
-			statement += field.Name + "' INTEGER NOT NULL,'"
+			builder.WriteString(field.Name)
+			builder.WriteString("' INTEGER NOT NULL,'")
 		// case field.Type.Kind() == reflect.Pointer:
 		case field.Type.Kind() == reflect.String:
-			statement += field.Name + "' TEXT NOT NULL,'"
+			builder.WriteString(field.Name)
+			builder.WriteString("' TEXT NOT NULL,'")
 		default:
 			return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
 		}
 	}
+
+	statement := builder.String()
 	if strings.HasSuffix(statement, "('") {
 		return "", errors.New(_NO_FIELDS_ERROR)
 	} else {
@@ -78,12 +89,17 @@ func insert(tx *sql.Tx, row []string, t reflect.Type) error {
 		return errors.New(_NOT_A_STRUCT_ERROR)
 	}
 
-	statement := "INSERT INTO " + t.Name() + " VALUES ("
+	builder := strings.Builder{}
+	builder.WriteString("INSERT INTO '")
+	builder.WriteString(t.Name())
+	builder.WriteString("' VALUES (")
 	args := []any{}
 	for i := range t.NumField() {
-		statement += "?,"
+		builder.WriteString("?,")
 		args = append(args, any(row[i]))
 	}
+
+	statement := builder.String()
 	if strings.HasSuffix(statement, "(") {
 		return errors.New(_NO_FIELDS_ERROR)
 	} else {
