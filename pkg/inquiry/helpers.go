@@ -12,7 +12,6 @@ import (
 
 const (
 	_FILE_PATH_DOES_NOT_EXIST_ERROR string = "inquiry error: file path does not exist"
-	_MISMATCH_NUM_OF_COLUMNS_ERROR  string = "inquiry error: number of columns in the row does not match the number of fields in the struct"
 	_NO_FIELDS_ERROR                string = "inquiry error: struct has no fields"
 	_NOT_A_STRUCT_ERROR             string = "inquiry error: generic type provided is not a struct"
 	_UNSUPPORTED_FIELD_TYPE_ERROR   string = "inquiry error: unsupported field type"
@@ -84,28 +83,11 @@ func createTable[T any](db *sql.DB) (reflect.Type, error) {
 	return t, err
 }
 
-func insert(tx *sql.Tx, row []string, t reflect.Type) error {
-	if t.Kind() != reflect.Struct {
-		return errors.New(_NOT_A_STRUCT_ERROR)
-	}
-
-	builder := strings.Builder{}
-	builder.WriteString("INSERT INTO '")
-	builder.WriteString(t.Name())
-	builder.WriteString("' VALUES (")
+func insert(tx *sql.Tx, statement string, row []string) error {
 	args := []any{}
-	for i := range t.NumField() {
-		builder.WriteString("?,")
-		args = append(args, any(row[i]))
+	for _, item := range row {
+		args = append(args, any(item))
 	}
-
-	statement := builder.String()
-	if strings.HasSuffix(statement, "(") {
-		return errors.New(_NO_FIELDS_ERROR)
-	} else {
-		statement = strings.TrimSuffix(statement, ",")
-	}
-	statement += ");"
 
 	_, err := tx.Exec(statement, args...)
 	return err
@@ -123,6 +105,11 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 		return nil, err
 	}
 	defer file.Close()
+
+	statement, err := prepareStatement(t)
+	if err != nil {
+		return nil, err
+	}
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -152,7 +139,7 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 				return nil, err
 			}
 
-			err = insert(tx, row, t)
+			err = insert(tx, statement, row)
 			if err != nil {
 				return nil, err
 			}
@@ -165,4 +152,26 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 	}
 
 	return db, nil
+}
+
+func prepareStatement(t reflect.Type) (string, error) {
+	if t.Kind() != reflect.Struct {
+		return "", errors.New(_NOT_A_STRUCT_ERROR)
+	} else if t.NumField() == 0 {
+		return "", errors.New(_NO_FIELDS_ERROR)
+	}
+
+	builder := strings.Builder{}
+	builder.WriteString("INSERT INTO '")
+	builder.WriteString(t.Name())
+	builder.WriteString("' VALUES (")
+	for range t.NumField() {
+		builder.WriteString("?,")
+	}
+
+	statement := builder.String()
+	statement = strings.TrimSuffix(statement, ",")
+	statement += ");"
+
+	return statement, nil
 }
