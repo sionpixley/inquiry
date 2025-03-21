@@ -50,7 +50,36 @@ func buildCreateTableStatement(t reflect.Type) (string, error) {
 		case field.Type.Kind() == reflect.Int64:
 			builder.WriteString(field.Name)
 			builder.WriteString("' INTEGER NOT NULL,'")
-		// case field.Type.Kind() == reflect.Pointer:
+		case field.Type.Kind() == reflect.Pointer:
+			f := field.Type.Elem()
+			switch {
+			case f.Kind() == reflect.Bool:
+				builder.WriteString(field.Name)
+				builder.WriteString("' INTEGER NULL CHECK('")
+				builder.WriteString(field.Name)
+				builder.WriteString("' IN (0,1)),'")
+			case f.Kind() == reflect.Float32:
+				fallthrough
+			case f.Kind() == reflect.Float64:
+				builder.WriteString(field.Name)
+				builder.WriteString("' REAL NULL,'")
+			case f.Kind() == reflect.Int:
+				fallthrough
+			case f.Kind() == reflect.Int8:
+				fallthrough
+			case f.Kind() == reflect.Int16:
+				fallthrough
+			case f.Kind() == reflect.Int32:
+				fallthrough
+			case f.Kind() == reflect.Int64:
+				builder.WriteString(field.Name)
+				builder.WriteString("' INTEGER NULL,'")
+			case f.Kind() == reflect.String:
+				builder.WriteString(field.Name)
+				builder.WriteString("' TEXT NULL,'")
+			default:
+				return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
+			}
 		case field.Type.Kind() == reflect.String:
 			builder.WriteString(field.Name)
 			builder.WriteString("' TEXT NOT NULL,'")
@@ -86,7 +115,11 @@ func createTable[T any](db *sql.DB) (reflect.Type, error) {
 func insert(tx *sql.Tx, statement string, row []string) error {
 	args := []any{}
 	for _, item := range row {
-		args = append(args, any(item))
+		if trimmedStr := strings.TrimSpace(item); trimmedStr == "" || trimmedStr == "null" || trimmedStr == "NULL" {
+			args = append(args, nil)
+		} else {
+			args = append(args, any(item))
+		}
 	}
 
 	_, err := tx.Exec(statement, args...)
