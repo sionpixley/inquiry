@@ -112,13 +112,13 @@ func createTable[T any](db *sql.DB) (reflect.Type, error) {
 	return t, err
 }
 
-func insert(tx *sql.Tx, statement string, row []string) error {
+func insert(tx *sql.Tx, statement string, row []string, t reflect.Type) error {
 	args := []any{}
-	for _, item := range row {
-		if trimmedStr := strings.TrimSpace(item); trimmedStr == "" || trimmedStr == "null" || trimmedStr == "NULL" {
+	for i := range t.NumField() {
+		if trimmedStr := strings.TrimSpace(row[i]); (trimmedStr == "" || trimmedStr == "null" || trimmedStr == "NULL") && t.Field(i).Type.Kind() == reflect.Pointer {
 			args = append(args, nil)
 		} else {
-			args = append(args, any(item))
+			args = append(args, any(row[i]))
 		}
 	}
 
@@ -172,7 +172,7 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 				return nil, err
 			}
 
-			err = insert(tx, statement, row)
+			err = insert(tx, statement, row, t)
 			if err != nil {
 				return nil, err
 			}
