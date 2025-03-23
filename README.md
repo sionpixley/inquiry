@@ -9,10 +9,12 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
 1. [Project structure](#project-structure)
 2. [How to install](#how-to-install)
 3. [How to use](#how-to-use)
-    1. [Creating an in-memory SQLite database from a CSV file](#creating-an-in-memory-sqlite-database-from-a-csv-file)
+    1. [Defining your struct](#defining-your-struct)
+        1. [Go field to SQL column mapping](#go-field-to-sql-column-mapping)
+    2. [Creating an in-memory SQLite database from a CSV file](#creating-an-in-memory-sqlite-database-from-a-csv-file)
         1. [Without options](#without-options)
         2. [With options](#with-options)
-    2. [Creating a new table from a CSV file and adding it to an existing SQLite database](#creating-a-new-table-from-a-csv-file-and-adding-it-to-an-existing-sqlite-database)
+    3. [Creating a new table from a CSV file and adding it to an existing SQLite database](#creating-a-new-table-from-a-csv-file-and-adding-it-to-an-existing-sqlite-database)
         1. [Adding a table to an in-memory database from a CSV](#adding-a-table-to-an-in-memory-database-from-a-csv)
         2. [Adding a table to an on-disk database from a CSV](#adding-a-table-to-an-on-disk-database-from-a-csv)
 
@@ -40,7 +42,51 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
 
 Using Inquiry is pretty simple: You "connect" to the CSV file and Inquiry will return a `*sql.DB` and an `error`. You can then use the returned `*sql.DB` to do any operations that you would normally do with a SQLite database.
 
-You can also create new tables from CSV files and add them to an existing SQLite database (in-memory or not). 
+You can also create new tables from CSV files and add them to an existing SQLite database (in-memory or not).
+
+### Defining your struct
+
+> **Note:** Currently, there is limited ability to customize the SQL `CREATE TABLE` statement that Inquiry generates. Future features will introduce more customization like creating primary keys, indexes, unique constraints, and even foreign keys.
+
+Inquiry uses generics and package `reflect` to build the SQLite database/table and to insert the data. Please put the struct fields in the same position as the column they are supposed to represent in the CSV file. Different struct definitions yield different SQL `CREATE TABLE` statements. For example:
+
+```
+type Student struct {
+    Id         int
+    FirstName  string
+    MiddleName *string
+    LastName   string
+    IsFullTime bool
+    GPA        float64
+}
+
+// SQL CREATE TABLE statement that is generated from the above Go struct definition.
+CREATE TABLE 'Student'(
+    'Id'         INTEGER NOT NULL,
+    'FirstName'  TEXT NOT NULL,
+    'MiddleName' TEXT NULL,
+    'LastName'   TEXT NOT NULL,
+    'IsFullTime' INTEGER NOT NULL CHECK('IsFullTime' IN (0,1)),
+    'GPA'        REAL NOT NULL
+);
+```
+
+Please consult the table below for a full list of which Go field types map to which SQL column types.
+
+#### Go field to SQL column mapping
+
+> **Note:** More type support is coming.
+
+| Go Field Type | SQL Column Type |
+| ------------- | --------------- |
+| `bool` | `INTEGER NOT NULL CHECK(<field_name> IN (0,1))` |
+| `*bool` | `INTEGER NULL CHECK(<field_name> IN (0,1))` |
+| - `float32` <br> - `float64` | `REAL NOT NULL` |
+| - `*float32` <br> - `*float64` | `REAL NULL` |
+| - `int` <br> - `int8` <br> - `int16` <br> - `int32` <br> - `int64` | `INTEGER NOT NULL` |
+| - `*int` <br> - `*int8` <br> - `*int16` <br> - `*int32` <br> - `*int64` | `INTEGER NULL` |
+| `string` | `TEXT NOT NULL` |
+| `*string` | `TEXT NULL` |
 
 ### Creating an in-memory SQLite database from a CSV file
 
