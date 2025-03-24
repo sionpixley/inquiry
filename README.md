@@ -88,6 +88,8 @@ Please consult the table below for a full list of which Go field types map to wh
 | `string` | `TEXT NOT NULL` |
 | `*string` | `TEXT NULL` |
 
+On nullable columns, certain values in the CSV will insert a `NULL` into the database. These values are: an empty value, `null`, and `NULL`. On non-nullable columns, these values can potentially throw an error or be inserted as they are (especially in the case of a `TEXT` column).
+
 ### Creating an in-memory SQLite database from a CSV file
 
 To create an in-memory database from a CSV file, use the `Connect` or `ConnectWithOptions` function. 
