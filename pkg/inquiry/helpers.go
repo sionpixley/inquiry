@@ -50,7 +50,36 @@ func buildCreateTableStatement(t reflect.Type) (string, error) {
 		case field.Type.Kind() == reflect.Int64:
 			builder.WriteString(field.Name)
 			builder.WriteString("' INTEGER NOT NULL,'")
-		// case field.Type.Kind() == reflect.Pointer:
+		case field.Type.Kind() == reflect.Pointer:
+			f := field.Type.Elem()
+			switch {
+			case f.Kind() == reflect.Bool:
+				builder.WriteString(field.Name)
+				builder.WriteString("' INTEGER NULL CHECK('")
+				builder.WriteString(field.Name)
+				builder.WriteString("' IN (0,1)),'")
+			case f.Kind() == reflect.Float32:
+				fallthrough
+			case f.Kind() == reflect.Float64:
+				builder.WriteString(field.Name)
+				builder.WriteString("' REAL NULL,'")
+			case f.Kind() == reflect.Int:
+				fallthrough
+			case f.Kind() == reflect.Int8:
+				fallthrough
+			case f.Kind() == reflect.Int16:
+				fallthrough
+			case f.Kind() == reflect.Int32:
+				fallthrough
+			case f.Kind() == reflect.Int64:
+				builder.WriteString(field.Name)
+				builder.WriteString("' INTEGER NULL,'")
+			case f.Kind() == reflect.String:
+				builder.WriteString(field.Name)
+				builder.WriteString("' TEXT NULL,'")
+			default:
+				return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
+			}
 		case field.Type.Kind() == reflect.String:
 			builder.WriteString(field.Name)
 			builder.WriteString("' TEXT NOT NULL,'")
@@ -83,10 +112,14 @@ func createTable[T any](db *sql.DB) (reflect.Type, error) {
 	return t, err
 }
 
-func insert(tx *sql.Tx, statement string, row []string) error {
+func insert(tx *sql.Tx, statement string, row []string, t reflect.Type) error {
 	args := []any{}
-	for _, item := range row {
-		args = append(args, any(item))
+	for i := range t.NumField() {
+		if trimmedStr := strings.TrimSpace(row[i]); (trimmedStr == "" || trimmedStr == "null" || trimmedStr == "NULL") && t.Field(i).Type.Kind() == reflect.Pointer {
+			args = append(args, nil)
+		} else {
+			args = append(args, any(row[i]))
+		}
 	}
 
 	_, err := tx.Exec(statement, args...)
@@ -139,7 +172,7 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 				return nil, err
 			}
 
-			err = insert(tx, statement, row)
+			err = insert(tx, statement, row, t)
 			if err != nil {
 				return nil, err
 			}
