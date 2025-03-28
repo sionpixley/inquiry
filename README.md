@@ -59,8 +59,10 @@ type Student struct {
     IsFullTime bool
     GPA        float64
 }
+```
 
-// SQL CREATE TABLE statement that is generated from the above Go struct definition.
+```sql
+-- SQL CREATE TABLE statement that is generated from the above Go struct definition.
 CREATE TABLE 'Student'(
     'Id'         INTEGER NOT NULL,
     'FirstName'  TEXT NOT NULL,
