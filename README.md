@@ -1,8 +1,8 @@
 # Inquiry
 
-Inquiry is a Go package that converts CSV files into a SQLite database, allowing you to run SQL statements on them.
+> **⚠️ WARNING: Inquiry is in a very early stage of development and is not production-ready. The API is unstable, and breaking changes may occur. Use at your own risk.** ⚠️
 
-> **Note:** Inquiry is *very* new. It's still just a pet project. It has not been "battle-tested". It has not been benchmarked. It has not been stress tested. The API is still unstable and breaking changes can happen at any time. I would not recommend building any production-ready code with it. Use at your own risk.
+Inquiry is a Go package that converts CSV files into a SQLite database, allowing you to run SQL statements on them.
 
 ## Table of contents
 
@@ -50,7 +50,7 @@ You can also create new tables from CSV files and add them to an existing SQLite
 
 Inquiry uses generics and package `reflect` to build the SQLite database/table and to insert the data. Please put the struct fields in the same position as the column they are supposed to represent in the CSV file. Different struct definitions yield different SQL `CREATE TABLE` statements. For example:
 
-```
+```go
 type Student struct {
     Id         int
     FirstName  string
@@ -108,7 +108,7 @@ With options, you can specify your CSV delimiter and whether the file has a head
 5,yay,8.1
 ```
 
-```
+```go
 // main.go
 
 package main
@@ -163,7 +163,7 @@ func main() {
 
 The options are set using a struct: `CsvOptions`. Please see below for the definition of the `CsvOptions` struct and an example of using it.
 
-```
+```go
 type CsvOptions struct {
     Delimiter    rune `json:"delimiter"`
     HasHeaderRow bool `json:"hasHeaderRow"`
@@ -181,7 +181,7 @@ Id|Name|Value
 5|yay|8.1
 ```
 
-```
+```go
 package main
 
 import (
@@ -263,7 +263,7 @@ Id|Name|Value
 2,ehhh
 ```
 
-```
+```go
 // main.go
 
 package main
@@ -365,7 +365,7 @@ func main() {
 2;ehhh
 ```
 
-```
+```go
 package main
 
 import (
