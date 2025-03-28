@@ -17,6 +17,7 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
     3. [Creating a new table from a CSV file and adding it to an existing SQLite database](#creating-a-new-table-from-a-csv-file-and-adding-it-to-an-existing-sqlite-database)
         1. [Adding a table to an in-memory database from a CSV](#adding-a-table-to-an-in-memory-database-from-a-csv)
         2. [Adding a table to an on-disk database from a CSV](#adding-a-table-to-an-on-disk-database-from-a-csv)
+4. [Contributing](#contributing)
 
 ## Project structure
 
@@ -184,6 +185,8 @@ Id|Name|Value
 ```
 
 ```go
+// main.go
+
 package main
 
 import (
@@ -368,6 +371,8 @@ func main() {
 ```
 
 ```go
+// main.go
+
 package main
 
 import (
@@ -449,3 +454,7 @@ func main() {
 2 ehhh
 1 this is a horrible test
 ```
+
+## Contributing
+
+All contributions are welcome! If you wish to contribute to the project, the best way would be forking this repo and making a pull request from your fork with all of your suggested changes.
