@@ -1,6 +1,6 @@
 # Inquiry
 
-> **⚠️ WARNING: Inquiry is in a very early stage of development and is not production-ready. The API is unstable, and breaking changes may occur. Use at your own risk.** ⚠️
+> **⚠️ WARNING: Inquiry is in a very early stage of development and is not production-ready. The API is unstable, and breaking changes may occur. Use at your own risk.**
 
 Inquiry is a Go package that converts CSV files into a SQLite database, allowing you to run SQL statements on them.
 
