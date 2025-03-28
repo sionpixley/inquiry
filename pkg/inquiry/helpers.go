@@ -28,59 +28,59 @@ func buildCreateTableStatement(t reflect.Type) (string, error) {
 	builder.WriteString("'('")
 	for i := range t.NumField() {
 		field := t.Field(i)
-		switch {
-		case field.Type.Kind() == reflect.Bool:
+		switch field.Type.Kind() {
+		case reflect.Bool:
 			builder.WriteString(field.Name)
 			builder.WriteString("' INTEGER NOT NULL CHECK('")
 			builder.WriteString(field.Name)
 			builder.WriteString("' IN (0,1)),'")
-		case field.Type.Kind() == reflect.Float32:
+		case reflect.Float32:
 			fallthrough
-		case field.Type.Kind() == reflect.Float64:
+		case reflect.Float64:
 			builder.WriteString(field.Name)
 			builder.WriteString("' REAL NOT NULL,'")
-		case field.Type.Kind() == reflect.Int:
+		case reflect.Int:
 			fallthrough
-		case field.Type.Kind() == reflect.Int8:
+		case reflect.Int8:
 			fallthrough
-		case field.Type.Kind() == reflect.Int16:
+		case reflect.Int16:
 			fallthrough
-		case field.Type.Kind() == reflect.Int32:
+		case reflect.Int32:
 			fallthrough
-		case field.Type.Kind() == reflect.Int64:
+		case reflect.Int64:
 			builder.WriteString(field.Name)
 			builder.WriteString("' INTEGER NOT NULL,'")
-		case field.Type.Kind() == reflect.Pointer:
+		case reflect.Pointer:
 			f := field.Type.Elem()
-			switch {
-			case f.Kind() == reflect.Bool:
+			switch f.Kind() {
+			case reflect.Bool:
 				builder.WriteString(field.Name)
 				builder.WriteString("' INTEGER NULL CHECK('")
 				builder.WriteString(field.Name)
 				builder.WriteString("' IN (0,1)),'")
-			case f.Kind() == reflect.Float32:
+			case reflect.Float32:
 				fallthrough
-			case f.Kind() == reflect.Float64:
+			case reflect.Float64:
 				builder.WriteString(field.Name)
 				builder.WriteString("' REAL NULL,'")
-			case f.Kind() == reflect.Int:
+			case reflect.Int:
 				fallthrough
-			case f.Kind() == reflect.Int8:
+			case reflect.Int8:
 				fallthrough
-			case f.Kind() == reflect.Int16:
+			case reflect.Int16:
 				fallthrough
-			case f.Kind() == reflect.Int32:
+			case reflect.Int32:
 				fallthrough
-			case f.Kind() == reflect.Int64:
+			case reflect.Int64:
 				builder.WriteString(field.Name)
 				builder.WriteString("' INTEGER NULL,'")
-			case f.Kind() == reflect.String:
+			case reflect.String:
 				builder.WriteString(field.Name)
 				builder.WriteString("' TEXT NULL,'")
 			default:
 				return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
 			}
-		case field.Type.Kind() == reflect.String:
+		case reflect.String:
 			builder.WriteString(field.Name)
 			builder.WriteString("' TEXT NOT NULL,'")
 		default:
