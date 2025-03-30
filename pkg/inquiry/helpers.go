@@ -8,50 +8,37 @@ import (
 	"os"
 	"reflect"
 	"strings"
-
-	"github.com/sionpixley/inquiry/internal/constants"
-	"github.com/sionpixley/inquiry/internal/models"
 )
 
-func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, error) {
+const (
+	_FILE_PATH_DOES_NOT_EXIST_ERROR string = "inquiry error: file path does not exist"
+	_NO_FIELDS_ERROR                string = "inquiry error: struct has no fields"
+	_NOT_A_STRUCT_ERROR             string = "inquiry error: generic type provided is not a struct"
+	_UNSUPPORTED_FIELD_TYPE_ERROR   string = "inquiry error: unsupported field type"
+)
+
+func buildCreateTableStatement(t reflect.Type) (string, error) {
 	if t.Kind() != reflect.Struct {
-		return "", nil, errors.New(constants.NOT_A_STRUCT_ERROR)
-	} else if t.NumField() == 0 {
-		return "", nil, errors.New(constants.NO_FIELDS_ERROR)
+		return "", errors.New(_NOT_A_STRUCT_ERROR)
 	}
 
-	indexes := []models.FieldTagMap{}
-	constraints := []models.FieldTagMap{}
-
-	var builder strings.Builder
+	builder := strings.Builder{}
 	builder.WriteString("CREATE TABLE '")
 	builder.WriteString(t.Name())
-	builder.WriteString("'(")
+	builder.WriteString("'('")
 	for i := range t.NumField() {
 		field := t.Field(i)
-
-		tags := convertToTags(strings.Split(trimAndToLowerStr(field.Tag.Get("inquiry")), ","))
-		for _, tag := range tags {
-			if tag == constants.INDEX_TAG || (tag == constants.UNIQUE_TAG && field.Type.Kind() == reflect.Pointer) {
-				indexes = append(indexes, models.FieldTagMap{Field: field, Tag: tag})
-			} else if tag == constants.UNIQUE_TAG {
-				constraints = append(constraints, models.FieldTagMap{Field: field, Tag: tag})
-			}
-		}
-
 		switch field.Type.Kind() {
 		case reflect.Bool:
-			builder.WriteString("'")
 			builder.WriteString(field.Name)
 			builder.WriteString("' INTEGER NOT NULL CHECK('")
 			builder.WriteString(field.Name)
-			builder.WriteString("' IN (0,1)),")
+			builder.WriteString("' IN (0,1)),'")
 		case reflect.Float32:
 			fallthrough
 		case reflect.Float64:
-			builder.WriteString("'")
 			builder.WriteString(field.Name)
-			builder.WriteString("' REAL NOT NULL,")
+			builder.WriteString("' REAL NOT NULL,'")
 		case reflect.Int:
 			fallthrough
 		case reflect.Int8:
@@ -61,24 +48,21 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 		case reflect.Int32:
 			fallthrough
 		case reflect.Int64:
-			builder.WriteString("'")
 			builder.WriteString(field.Name)
-			builder.WriteString("' INTEGER NOT NULL,")
+			builder.WriteString("' INTEGER NOT NULL,'")
 		case reflect.Pointer:
 			f := field.Type.Elem()
 			switch f.Kind() {
 			case reflect.Bool:
-				builder.WriteString("'")
 				builder.WriteString(field.Name)
 				builder.WriteString("' INTEGER NULL CHECK('")
 				builder.WriteString(field.Name)
-				builder.WriteString("' IN (0,1)),")
+				builder.WriteString("' IN (0,1)),'")
 			case reflect.Float32:
 				fallthrough
 			case reflect.Float64:
-				builder.WriteString("'")
 				builder.WriteString(field.Name)
-				builder.WriteString("' REAL NULL,")
+				builder.WriteString("' REAL NULL,'")
 			case reflect.Int:
 				fallthrough
 			case reflect.Int8:
@@ -88,110 +72,43 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 			case reflect.Int32:
 				fallthrough
 			case reflect.Int64:
-				builder.WriteString("'")
 				builder.WriteString(field.Name)
-				builder.WriteString("' INTEGER NULL,")
+				builder.WriteString("' INTEGER NULL,'")
 			case reflect.String:
-				builder.WriteString("'")
 				builder.WriteString(field.Name)
-				builder.WriteString("' TEXT NULL,")
+				builder.WriteString("' TEXT NULL,'")
 			default:
-				return "", nil, errors.New(constants.UNSUPPORTED_FIELD_TYPE_ERROR)
+				return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
 			}
 		case reflect.String:
-			builder.WriteString("'")
 			builder.WriteString(field.Name)
-			builder.WriteString("' TEXT NOT NULL,")
+			builder.WriteString("' TEXT NOT NULL,'")
 		default:
-			return "", nil, errors.New(constants.UNSUPPORTED_FIELD_TYPE_ERROR)
+			return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
 		}
-	}
-
-	for _, constraint := range constraints {
-		builder.WriteString("CONSTRAINT ")
-		builder.WriteString("Unique_")
-		builder.WriteString(t.Name())
-		builder.WriteString("_")
-		builder.WriteString(constraint.Field.Name)
-		builder.WriteString(" UNIQUE('")
-		builder.WriteString(constraint.Field.Name)
-		builder.WriteString("'),")
 	}
 
 	statement := builder.String()
-	statement = strings.TrimSuffix(statement, ",")
-	statement += ");"
-	return statement, indexes, nil
-}
-
-func convertToTags(t []string) []models.Tag {
-	tags := []models.Tag{}
-	for _, strT := range t {
-		if strT == "index" {
-			tags = append(tags, constants.INDEX_TAG)
-		} else if strT == "unique" {
-			tags = append(tags, constants.UNIQUE_TAG)
-		} else {
-			tags = append(tags, constants.NA_TAG)
-		}
+	if strings.HasSuffix(statement, "('") {
+		return "", errors.New(_NO_FIELDS_ERROR)
+	} else {
+		statement = strings.TrimSuffix(statement, ",'")
 	}
-	return tags
+
+	statement += ");"
+	return statement, nil
 }
 
 func createTable[T any](db *sql.DB) (reflect.Type, error) {
 	var zeroValue T
 	t := reflect.TypeOf(zeroValue)
 
-	createStatement, indexes, err := buildCreateTableStatement(t)
+	createStatement, err := buildCreateTableStatement(t)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	_, err = tx.Exec(createStatement)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, index := range indexes {
-		var builder strings.Builder
-		builder.WriteString("CREATE ")
-		if index.Tag == constants.INDEX_TAG {
-			builder.WriteString("INDEX NonClustered_")
-			builder.WriteString(t.Name())
-			builder.WriteString("_")
-			builder.WriteString(index.Field.Name)
-			builder.WriteString(" ON '")
-			builder.WriteString(t.Name())
-			builder.WriteString("'('")
-			builder.WriteString(index.Field.Name)
-			builder.WriteString("');")
-		} else {
-			builder.WriteString("UNIQUE INDEX Unique_")
-			builder.WriteString(t.Name())
-			builder.WriteString("_")
-			builder.WriteString(index.Field.Name)
-			builder.WriteString(" ON '")
-			builder.WriteString(t.Name())
-			builder.WriteString("'('")
-			builder.WriteString(index.Field.Name)
-			builder.WriteString("') WHERE '")
-			builder.WriteString(index.Field.Name)
-			builder.WriteString("' IS NOT NULL;")
-		}
-
-		_, err = tx.Exec(builder.String())
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	err = tx.Commit()
+	_, err = db.Exec(createStatement)
 	return t, err
 }
 
@@ -211,7 +128,7 @@ func insert(tx *sql.Tx, statement string, row []string, t reflect.Type) error {
 
 func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptions) (*sql.DB, error) {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
-		return nil, errors.New(constants.FILE_PATH_DOES_NOT_EXIST_ERROR)
+		return nil, errors.New(_FILE_PATH_DOES_NOT_EXIST_ERROR)
 	} else if err != nil {
 		return nil, err
 	}
@@ -272,9 +189,9 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 
 func prepareStatement(t reflect.Type) (string, error) {
 	if t.Kind() != reflect.Struct {
-		return "", errors.New(constants.NOT_A_STRUCT_ERROR)
+		return "", errors.New(_NOT_A_STRUCT_ERROR)
 	} else if t.NumField() == 0 {
-		return "", errors.New(constants.NO_FIELDS_ERROR)
+		return "", errors.New(_NO_FIELDS_ERROR)
 	}
 
 	builder := strings.Builder{}
@@ -290,8 +207,4 @@ func prepareStatement(t reflect.Type) (string, error) {
 	statement += ");"
 
 	return statement, nil
-}
-
-func trimAndToLowerStr(s string) string {
-	return strings.ToLower(strings.TrimSpace(s))
 }
