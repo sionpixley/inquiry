@@ -161,7 +161,7 @@ func convertToTags(t []string) []models.Tag {
 	return tags
 }
 
-func createTable[T any](db *sql.DB) (reflect.Type, error) {
+func createTable[T any](tx *sql.Tx) (reflect.Type, error) {
 	var zeroValue T
 	t := reflect.TypeOf(zeroValue)
 
@@ -169,12 +169,6 @@ func createTable[T any](db *sql.DB) (reflect.Type, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	_, err = tx.Exec(createStatement)
 	if err != nil {
@@ -214,7 +208,6 @@ func createTable[T any](db *sql.DB) (reflect.Type, error) {
 		}
 	}
 
-	err = tx.Commit()
 	return t, err
 }
 
@@ -232,29 +225,23 @@ func insert(tx *sql.Tx, statement string, row []string, t reflect.Type) error {
 	return err
 }
 
-func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptions) (*sql.DB, error) {
+func insertRows(tx *sql.Tx, csvFilePath string, t reflect.Type, options CsvOptions) error {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
-		return nil, errors.New(constants.FILE_PATH_DOES_NOT_EXIST_ERROR)
+		return errors.New(constants.FILE_PATH_DOES_NOT_EXIST_ERROR)
 	} else if err != nil {
-		return nil, err
+		return err
 	}
 
 	file, err := os.Open(csvFilePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
 	statement, err := prepareStatement(t)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	reader := csv.NewReader(file)
 	if int(options.Delimiter) != 0 {
@@ -267,7 +254,7 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return nil, err
+				return err
 			}
 			options.HasHeaderRow = false
 		} else {
@@ -275,22 +262,17 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return nil, err
+				return err
 			}
 
 			err = insert(tx, statement, row, t)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	return nil
 }
 
 func prepareStatement(t reflect.Type) (string, error) {
