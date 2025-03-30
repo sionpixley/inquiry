@@ -12,5 +12,6 @@ const (
 const (
 	NA_TAG models.Tag = iota
 	INDEX_TAG
+	PRIMARY_KEY_TAG
 	UNIQUE_TAG
 )

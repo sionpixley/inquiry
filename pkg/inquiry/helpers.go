@@ -32,10 +32,19 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 
 		tags := convertToTags(strings.Split(trimAndToLowerStr(field.Tag.Get("inquiry")), ","))
 		for _, tag := range tags {
-			if tag == constants.INDEX_TAG || (tag == constants.UNIQUE_TAG && field.Type.Kind() == reflect.Pointer) {
+			switch tag {
+			case constants.INDEX_TAG:
 				indexes = append(indexes, models.FieldTagMap{Field: field, Tag: tag})
-			} else if tag == constants.UNIQUE_TAG {
+			case constants.PRIMARY_KEY_TAG:
 				constraints = append(constraints, models.FieldTagMap{Field: field, Tag: tag})
+			case constants.UNIQUE_TAG:
+				if field.Type.Kind() == reflect.Pointer {
+					indexes = append(indexes, models.FieldTagMap{Field: field, Tag: tag})
+				} else {
+					constraints = append(constraints, models.FieldTagMap{Field: field, Tag: tag})
+				}
+			default:
+				// Do nothing.
 			}
 		}
 
@@ -108,14 +117,25 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 	}
 
 	for _, constraint := range constraints {
-		builder.WriteString("CONSTRAINT ")
-		builder.WriteString("Unique_")
-		builder.WriteString(t.Name())
-		builder.WriteString("_")
-		builder.WriteString(constraint.Field.Name)
-		builder.WriteString(" UNIQUE('")
-		builder.WriteString(constraint.Field.Name)
-		builder.WriteString("'),")
+		if constraint.Tag == constants.PRIMARY_KEY_TAG {
+			builder.WriteString("CONSTRAINT ")
+			builder.WriteString("PK_")
+			builder.WriteString(t.Name())
+			builder.WriteString("_")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString(" PRIMARY KEY('")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString("'),")
+		} else {
+			builder.WriteString("CONSTRAINT ")
+			builder.WriteString("Unique_")
+			builder.WriteString(t.Name())
+			builder.WriteString("_")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString(" UNIQUE('")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString("'),")
+		}
 	}
 
 	statement := builder.String()
@@ -127,11 +147,14 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 func convertToTags(t []string) []models.Tag {
 	tags := []models.Tag{}
 	for _, strT := range t {
-		if strT == "index" {
+		switch strT {
+		case "index":
 			tags = append(tags, constants.INDEX_TAG)
-		} else if strT == "unique" {
+		case "primarykey":
+			tags = append(tags, constants.PRIMARY_KEY_TAG)
+		case "unique":
 			tags = append(tags, constants.UNIQUE_TAG)
-		} else {
+		default:
 			tags = append(tags, constants.NA_TAG)
 		}
 	}
