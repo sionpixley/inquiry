@@ -29,6 +29,11 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
 ├── SECURITY.md
 ├── go.mod
 ├── go.sum
+├── internal
+│   ├── constants
+│   │   └── consts.go
+│   └── models
+│       └── models.go
 └── pkg
     └── inquiry
         ├── helpers.go
