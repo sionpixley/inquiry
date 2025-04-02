@@ -1,5 +1,5 @@
 module github.com/sionpixley/inquiry
 
-go 1.24.1
+go 1.24.2
 
-require github.com/mattn/go-sqlite3 v1.14.24
+require github.com/mattn/go-sqlite3 v1.14.25
