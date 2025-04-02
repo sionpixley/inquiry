@@ -35,12 +35,24 @@ func ConnectWithOptions[T any](csvFilePath string, options CsvOptions) (*sql.DB,
 		return nil, err
 	}
 
-	t, err := createTable[T](db)
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	t, err := createTable[T](tx)
 	if err != nil {
 		return nil, err
 	}
 
-	return insertRows(db, csvFilePath, t, options)
+	err = insertRows(tx, csvFilePath, t, options)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	return db, err
 }
 
 /*
@@ -59,11 +71,21 @@ func CreateTable[T any](db *sql.DB, csvFilePath string) error {
 // It takes three parameters: a pointer to the SQLite database, a CSV file path, and a CsvOptions struct.
 // It returns an error. If no errors occur, the returned error will be nil.
 func CreateTableWithOptions[T any](db *sql.DB, csvFilePath string, options CsvOptions) error {
-	t, err := createTable[T](db)
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	t, err := createTable[T](tx)
 	if err != nil {
 		return err
 	}
 
-	_, errs := insertRows(db, csvFilePath, t, options)
-	return errs
+	err = insertRows(tx, csvFilePath, t, options)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

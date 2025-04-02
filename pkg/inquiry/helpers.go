@@ -8,37 +8,59 @@ import (
 	"os"
 	"reflect"
 	"strings"
+
+	"github.com/sionpixley/inquiry/internal/constants"
+	"github.com/sionpixley/inquiry/internal/models"
 )
 
-const (
-	_FILE_PATH_DOES_NOT_EXIST_ERROR string = "inquiry error: file path does not exist"
-	_NO_FIELDS_ERROR                string = "inquiry error: struct has no fields"
-	_NOT_A_STRUCT_ERROR             string = "inquiry error: generic type provided is not a struct"
-	_UNSUPPORTED_FIELD_TYPE_ERROR   string = "inquiry error: unsupported field type"
-)
-
-func buildCreateTableStatement(t reflect.Type) (string, error) {
+func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, error) {
 	if t.Kind() != reflect.Struct {
-		return "", errors.New(_NOT_A_STRUCT_ERROR)
+		return "", nil, errors.New(constants.NOT_A_STRUCT_ERROR)
+	} else if t.NumField() == 0 {
+		return "", nil, errors.New(constants.NO_FIELDS_ERROR)
 	}
 
-	builder := strings.Builder{}
+	indexes := []models.FieldTagMap{}
+	constraints := []models.FieldTagMap{}
+
+	var builder strings.Builder
 	builder.WriteString("CREATE TABLE '")
 	builder.WriteString(t.Name())
-	builder.WriteString("'('")
+	builder.WriteString("'(")
 	for i := range t.NumField() {
 		field := t.Field(i)
+
+		tags := convertToTags(strings.Split(trimAndToLowerStr(field.Tag.Get("inquiry")), ","))
+		for _, tag := range tags {
+			switch tag {
+			case constants.INDEX_TAG:
+				indexes = append(indexes, models.FieldTagMap{Field: field, Tag: tag})
+			case constants.PRIMARY_KEY_TAG:
+				constraints = append(constraints, models.FieldTagMap{Field: field, Tag: tag})
+			case constants.UNIQUE_TAG:
+				if field.Type.Kind() == reflect.Pointer {
+					indexes = append(indexes, models.FieldTagMap{Field: field, Tag: tag})
+				} else {
+					constraints = append(constraints, models.FieldTagMap{Field: field, Tag: tag})
+				}
+			default:
+				// Do nothing.
+			}
+		}
+
 		switch field.Type.Kind() {
 		case reflect.Bool:
+			builder.WriteString("'")
 			builder.WriteString(field.Name)
 			builder.WriteString("' INTEGER NOT NULL CHECK('")
 			builder.WriteString(field.Name)
-			builder.WriteString("' IN (0,1)),'")
+			builder.WriteString("' IN (0,1)),")
 		case reflect.Float32:
 			fallthrough
 		case reflect.Float64:
+			builder.WriteString("'")
 			builder.WriteString(field.Name)
-			builder.WriteString("' REAL NOT NULL,'")
+			builder.WriteString("' REAL NOT NULL,")
 		case reflect.Int:
 			fallthrough
 		case reflect.Int8:
@@ -48,21 +70,24 @@ func buildCreateTableStatement(t reflect.Type) (string, error) {
 		case reflect.Int32:
 			fallthrough
 		case reflect.Int64:
+			builder.WriteString("'")
 			builder.WriteString(field.Name)
-			builder.WriteString("' INTEGER NOT NULL,'")
+			builder.WriteString("' INTEGER NOT NULL,")
 		case reflect.Pointer:
 			f := field.Type.Elem()
 			switch f.Kind() {
 			case reflect.Bool:
+				builder.WriteString("'")
 				builder.WriteString(field.Name)
 				builder.WriteString("' INTEGER NULL CHECK('")
 				builder.WriteString(field.Name)
-				builder.WriteString("' IN (0,1)),'")
+				builder.WriteString("' IN (0,1)),")
 			case reflect.Float32:
 				fallthrough
 			case reflect.Float64:
+				builder.WriteString("'")
 				builder.WriteString(field.Name)
-				builder.WriteString("' REAL NULL,'")
+				builder.WriteString("' REAL NULL,")
 			case reflect.Int:
 				fallthrough
 			case reflect.Int8:
@@ -72,43 +97,117 @@ func buildCreateTableStatement(t reflect.Type) (string, error) {
 			case reflect.Int32:
 				fallthrough
 			case reflect.Int64:
+				builder.WriteString("'")
 				builder.WriteString(field.Name)
-				builder.WriteString("' INTEGER NULL,'")
+				builder.WriteString("' INTEGER NULL,")
 			case reflect.String:
+				builder.WriteString("'")
 				builder.WriteString(field.Name)
-				builder.WriteString("' TEXT NULL,'")
+				builder.WriteString("' TEXT NULL,")
 			default:
-				return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
+				return "", nil, errors.New(constants.UNSUPPORTED_FIELD_TYPE_ERROR)
 			}
 		case reflect.String:
+			builder.WriteString("'")
 			builder.WriteString(field.Name)
-			builder.WriteString("' TEXT NOT NULL,'")
+			builder.WriteString("' TEXT NOT NULL,")
 		default:
-			return "", errors.New(_UNSUPPORTED_FIELD_TYPE_ERROR)
+			return "", nil, errors.New(constants.UNSUPPORTED_FIELD_TYPE_ERROR)
+		}
+	}
+
+	for _, constraint := range constraints {
+		if constraint.Tag == constants.PRIMARY_KEY_TAG {
+			builder.WriteString("CONSTRAINT ")
+			builder.WriteString("PK_")
+			builder.WriteString(t.Name())
+			builder.WriteString("_")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString(" PRIMARY KEY('")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString("'),")
+		} else {
+			builder.WriteString("CONSTRAINT ")
+			builder.WriteString("Unique_")
+			builder.WriteString(t.Name())
+			builder.WriteString("_")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString(" UNIQUE('")
+			builder.WriteString(constraint.Field.Name)
+			builder.WriteString("'),")
 		}
 	}
 
 	statement := builder.String()
-	if strings.HasSuffix(statement, "('") {
-		return "", errors.New(_NO_FIELDS_ERROR)
-	} else {
-		statement = strings.TrimSuffix(statement, ",'")
-	}
-
+	statement = strings.TrimSuffix(statement, ",")
 	statement += ");"
-	return statement, nil
+	return statement, indexes, nil
 }
 
-func createTable[T any](db *sql.DB) (reflect.Type, error) {
+func convertToTags(t []string) []models.Tag {
+	tags := []models.Tag{}
+	for _, strT := range t {
+		switch strT {
+		case "index":
+			tags = append(tags, constants.INDEX_TAG)
+		case "primarykey":
+			tags = append(tags, constants.PRIMARY_KEY_TAG)
+		case "unique":
+			tags = append(tags, constants.UNIQUE_TAG)
+		default:
+			tags = append(tags, constants.NA_TAG)
+		}
+	}
+	return tags
+}
+
+func createTable[T any](tx *sql.Tx) (reflect.Type, error) {
 	var zeroValue T
 	t := reflect.TypeOf(zeroValue)
 
-	createStatement, err := buildCreateTableStatement(t)
+	createStatement, indexes, err := buildCreateTableStatement(t)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = db.Exec(createStatement)
+	_, err = tx.Exec(createStatement)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, index := range indexes {
+		var builder strings.Builder
+		builder.WriteString("CREATE ")
+		if index.Tag == constants.INDEX_TAG {
+			builder.WriteString("INDEX NonClustered_")
+			builder.WriteString(t.Name())
+			builder.WriteString("_")
+			builder.WriteString(index.Field.Name)
+			builder.WriteString(" ON '")
+			builder.WriteString(t.Name())
+			builder.WriteString("'('")
+			builder.WriteString(index.Field.Name)
+			builder.WriteString("');")
+		} else {
+			builder.WriteString("UNIQUE INDEX Unique_")
+			builder.WriteString(t.Name())
+			builder.WriteString("_")
+			builder.WriteString(index.Field.Name)
+			builder.WriteString(" ON '")
+			builder.WriteString(t.Name())
+			builder.WriteString("'('")
+			builder.WriteString(index.Field.Name)
+			builder.WriteString("') WHERE '")
+			builder.WriteString(index.Field.Name)
+			builder.WriteString("' IS NOT NULL;")
+		}
+
+		_, err = tx.Exec(builder.String())
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return t, err
 }
 
@@ -126,29 +225,23 @@ func insert(tx *sql.Tx, statement string, row []string, t reflect.Type) error {
 	return err
 }
 
-func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptions) (*sql.DB, error) {
+func insertRows(tx *sql.Tx, csvFilePath string, t reflect.Type, options CsvOptions) error {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
-		return nil, errors.New(_FILE_PATH_DOES_NOT_EXIST_ERROR)
+		return errors.New(constants.FILE_PATH_DOES_NOT_EXIST_ERROR)
 	} else if err != nil {
-		return nil, err
+		return err
 	}
 
 	file, err := os.Open(csvFilePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
 	statement, err := prepareStatement(t)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
 
 	reader := csv.NewReader(file)
 	if int(options.Delimiter) != 0 {
@@ -161,7 +254,7 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return nil, err
+				return err
 			}
 			options.HasHeaderRow = false
 		} else {
@@ -169,29 +262,24 @@ func insertRows(db *sql.DB, csvFilePath string, t reflect.Type, options CsvOptio
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return nil, err
+				return err
 			}
 
 			err = insert(tx, statement, row, t)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	return nil
 }
 
 func prepareStatement(t reflect.Type) (string, error) {
 	if t.Kind() != reflect.Struct {
-		return "", errors.New(_NOT_A_STRUCT_ERROR)
+		return "", errors.New(constants.NOT_A_STRUCT_ERROR)
 	} else if t.NumField() == 0 {
-		return "", errors.New(_NO_FIELDS_ERROR)
+		return "", errors.New(constants.NO_FIELDS_ERROR)
 	}
 
 	builder := strings.Builder{}
@@ -207,4 +295,8 @@ func prepareStatement(t reflect.Type) (string, error) {
 	statement += ");"
 
 	return statement, nil
+}
+
+func trimAndToLowerStr(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
 }

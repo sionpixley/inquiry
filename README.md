@@ -47,8 +47,6 @@ You can also create new tables from CSV files and add them to an existing SQLite
 
 ### Defining your struct
 
-> **Note:** Currently, there is limited ability to customize the SQL `CREATE TABLE` statement that Inquiry generates. Future features will introduce more customization like creating primary keys, indexes, unique constraints, and even foreign keys.
-
 Inquiry uses generics and package `reflect` to build the SQLite database/table and to insert the data. Please put the struct fields in the same position as the column they are supposed to represent in the CSV file. Different struct definitions yield different SQL `CREATE TABLE` statements. For example:
 
 ```go
@@ -92,6 +90,52 @@ Please consult the table below for a full list of which Go field types map to wh
 | `*string` | `TEXT NULL` |
 
 On nullable columns, certain values in the CSV will insert a `NULL` into the database. These values are: an empty value, `null`, and `NULL`. On non-nullable columns, these values can potentially throw an error or be inserted as they are (especially in the case of a `TEXT` column).
+
+#### Inquiry struct tags
+
+You can use struct tags to create primary keys, indexes, and unique constraints.
+
+> **Note:** Inquiry currently only supports single-column indexes and unique constraints.
+
+```go
+type Customer struct {
+    Index            int    `inquiry:"primaryKey"`
+    CustomerId       string `inquiry:"unique"`
+    FirstName        string
+    LastName         string
+    Company          string
+    City             string
+    Country          string
+    Phone1           string
+    Phone2           string
+    Email            *string
+    SubscriptionDate string
+    Website          string `inquiry:"index"`
+}
+```
+
+```sql
+-- SQL that is generated from the above Go struct definition.
+CREATE TABLE 'Customer'(
+    'Index'            INTEGER NOT NULL,
+    'CustomerId'       TEXT NOT NULL,
+    'FirstName'        TEXT NOT NULL,
+    'LastName'         TEXT NOT NULL,
+    'Company'          TEXT NOT NULL,
+    'City'             TEXT NOT NULL,
+    'Country'          TEXT NOT NULL,
+    'Phone1'           TEXT NOT NULL,
+    'Phone2'           TEXT NOT NULL,
+    'Email'            TEXT NULL,
+    'SubscriptionDate' TEXT NOT NULL,
+    'Website'          TEXT NOT NULL,
+
+    CONSTRAINT PK_Customer_Index PRIMARY KEY('Index'),
+    CONSTRAINT Unique_Customer_CustomerId UNIQUE('CustomerId')
+);
+
+CREATE INDEX NonClustered_Customer_Website ON 'Customer'('Website');
+```
 
 ### Creating an in-memory SQLite database from a CSV file
 
