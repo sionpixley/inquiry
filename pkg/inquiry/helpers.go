@@ -244,9 +244,15 @@ func insertRows(tx *sql.Tx, csvFilePath string, t reflect.Type, options CsvOptio
 	}
 
 	reader := csv.NewReader(file)
+	reader.LazyQuotes = options.UseLazyQuotes
+	reader.TrimLeadingSpace = options.TrimLeadingSpace
 	if int(options.Delimiter) != 0 {
 		reader.Comma = options.Delimiter
 	}
+	if int(options.CommentCharacter) != 0 {
+		reader.Comment = options.CommentCharacter
+	}
+
 	for {
 		// Skip first loop if there's a header row.
 		if options.HasHeaderRow {

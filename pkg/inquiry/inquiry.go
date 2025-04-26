@@ -9,8 +9,11 @@ import (
 
 // CsvOptions is a struct that allows you to configure information about your CSV file.
 type CsvOptions struct {
-	Delimiter    rune `json:"delimiter"`
-	HasHeaderRow bool `json:"hasHeaderRow"`
+	CommentCharacter rune `json:"commentCharacter"`
+	Delimiter        rune `json:"delimiter"`
+	HasHeaderRow     bool `json:"hasHeaderRow"`
+	TrimLeadingSpace bool `json:"trimLeadingSpace"`
+	UseLazyQuotes    bool `json:"useLazyQuotes"`
 }
 
 /*
@@ -22,7 +25,13 @@ It assumes that the CSV file doesn't have a header row and that the file's delim
 If you need to customize these, please use the function ConnectWithOptions.
 */
 func Connect[T any](csvFilePath string) (*sql.DB, error) {
-	return ConnectWithOptions[T](csvFilePath, CsvOptions{Delimiter: ',', HasHeaderRow: false})
+	options := CsvOptions{
+		Delimiter:        ',',
+		HasHeaderRow:     false,
+		TrimLeadingSpace: false,
+		UseLazyQuotes:    false,
+	}
+	return ConnectWithOptions[T](csvFilePath, options)
 }
 
 // ConnectWithOptions is a function that creates an in-memory SQLite database from a CSV file.
@@ -64,7 +73,13 @@ It assumes that the CSV file doesn't have a header row and that the file's delim
 If you need to customize these, please use the function CreateTableWithOptions.
 */
 func CreateTable[T any](db *sql.DB, csvFilePath string) error {
-	return CreateTableWithOptions[T](db, csvFilePath, CsvOptions{Delimiter: ',', HasHeaderRow: false})
+	options := CsvOptions{
+		Delimiter:        ',',
+		HasHeaderRow:     false,
+		TrimLeadingSpace: false,
+		UseLazyQuotes:    false,
+	}
+	return CreateTableWithOptions[T](db, csvFilePath, options)
 }
 
 // CreateTableWithOptions is a function that creates a new table from a CSV file and adds it to an existing SQLite database.
