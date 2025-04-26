@@ -1,7 +1,5 @@
 # Inquiry
 
-> **⚠️ WARNING: Inquiry is in a very early stage of development and is not production-ready. The API is unstable, and breaking changes may occur. Use at your own risk.**
-
 Inquiry is a Go package that converts CSV files into a SQLite database, allowing you to run SQL statements on them.
 
 ## Table of contents
@@ -10,7 +8,7 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
 2. [How to install](#how-to-install)
 3. [How to use](#how-to-use)
     1. [Defining your struct](#defining-your-struct)
-        1. [Go field to SQL column mapping](#go-field-to-sql-column-mapping)
+        1. [Go field to SQLite column mapping](#go-field-to-sqlite-column-mapping)
     2. [Creating an in-memory SQLite database from a CSV file](#creating-an-in-memory-sqlite-database-from-a-csv-file)
         1. [Without options](#without-options)
         2. [With options](#with-options)
@@ -23,6 +21,13 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
 
 ```
 .
+├── .editorconfig
+├── .github
+│   └── ISSUE_TEMPLATE
+│       ├── bug_report.md
+│       ├── custom.md
+│       └── feature_request.md
+├── .gitignore
 ├── CODE_OF_CONDUCT.md
 ├── LICENSE
 ├── README.md
@@ -77,13 +82,13 @@ CREATE TABLE 'Student'(
 );
 ```
 
-Please consult the table below for a full list of which Go field types map to which SQL column types.
+Please consult the table below for a full list of which Go field types map to which SQLite column types.
 
-#### Go field to SQL column mapping
+#### Go field to SQLite column mapping
 
 > **Note:** More type support is coming.
 
-| Go Field Type | SQL Column Type |
+| Go Field Type | SQLite Column Type |
 | ------------- | --------------- |
 | `bool` | `INTEGER NOT NULL CHECK(<field_name> IN (0,1))` |
 | `*bool` | `INTEGER NULL CHECK(<field_name> IN (0,1))` |
@@ -217,8 +222,11 @@ The options are set using a struct: `CsvOptions`. Please see below for the defin
 
 ```go
 type CsvOptions struct {
-    Delimiter    rune `json:"delimiter"`
-    HasHeaderRow bool `json:"hasHeaderRow"`
+    CommentCharacter rune `json:"commentCharacter"`
+    Delimiter        rune `json:"delimiter"`
+    HasHeaderRow     bool `json:"hasHeaderRow"`
+    TrimLeadingSpace bool `json:"trimLeadingSpace"`
+    UseLazyQuotes    bool `json:"useLazyQuotes"`
 }
 ```
 
