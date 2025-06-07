@@ -86,8 +86,6 @@ Please consult the table below for a full list of which Go field types map to wh
 
 #### Go field to SQLite column mapping
 
-> **Note:** More type support is coming.
-
 | Go Field Type | SQLite Column Type |
 | ------------- | --------------- |
 | `bool` | `INTEGER NOT NULL CHECK(<field_name> IN (0,1))` |
