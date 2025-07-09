@@ -1,4 +1,5 @@
 .DS_Store
 *.csv
 cpu.prof
+.idea
 main.go

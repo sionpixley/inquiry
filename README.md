@@ -4,9 +4,8 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
 
 ## Table of contents
 
-1. [Project structure](#project-structure)
-2. [How to install](#how-to-install)
-3. [How to use](#how-to-use)
+1. [How to install](#how-to-install)
+2. [How to use](#how-to-use)
     1. [Defining your struct](#defining-your-struct)
         1. [Go field to SQLite column mapping](#go-field-to-sqlite-column-mapping)
     2. [Creating an in-memory SQLite database from a CSV file](#creating-an-in-memory-sqlite-database-from-a-csv-file)
@@ -15,35 +14,7 @@ Inquiry is a Go package that converts CSV files into a SQLite database, allowing
     3. [Creating a new table from a CSV file and adding it to an existing SQLite database](#creating-a-new-table-from-a-csv-file-and-adding-it-to-an-existing-sqlite-database)
         1. [Adding a table to an in-memory database from a CSV](#adding-a-table-to-an-in-memory-database-from-a-csv)
         2. [Adding a table to an on-disk database from a CSV](#adding-a-table-to-an-on-disk-database-from-a-csv)
-4. [Contributing](#contributing)
-
-## Project structure
-
-```
-.
-├── .editorconfig
-├── .github
-│   └── ISSUE_TEMPLATE
-│       ├── bug_report.md
-│       ├── custom.md
-│       └── feature_request.md
-├── .gitignore
-├── CODE_OF_CONDUCT.md
-├── LICENSE
-├── README.md
-├── SECURITY.md
-├── go.mod
-├── go.sum
-├── internal
-│   ├── constants
-│   │   └── consts.go
-│   └── models
-│       └── models.go
-└── pkg
-    └── inquiry
-        ├── helpers.go
-        └── inquiry.go
-```
+3. [Contributing](#contributing)
 
 ## How to install
 
