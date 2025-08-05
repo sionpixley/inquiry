@@ -3,15 +3,15 @@ package constants
 import "github.com/sionpixley/inquiry/internal/models"
 
 const (
-	FILE_PATH_DOES_NOT_EXIST_ERROR string = "inquiry error: file path does not exist"
-	NO_FIELDS_ERROR                string = "inquiry error: struct has no fields"
-	NOT_A_STRUCT_ERROR             string = "inquiry error: generic type provided is not a struct"
-	UNSUPPORTED_FIELD_TYPE_ERROR   string = "inquiry error: unsupported field type"
+	FilePathDoesNotExistError string = "inquiry error: file path does not exist"
+	NoFieldsError             string = "inquiry error: struct has no fields"
+	NotAStructError           string = "inquiry error: generic type provided is not a struct"
+	UnsupportedFileTypeError  string = "inquiry error: unsupported field type"
 )
 
 const (
-	NA_TAG models.Tag = iota
-	INDEX_TAG
-	PRIMARY_KEY_TAG
-	UNIQUE_TAG
+	OtherTag models.Tag = iota
+	IndexTag
+	PrimaryKeyTag
+	UniqueTag
 )

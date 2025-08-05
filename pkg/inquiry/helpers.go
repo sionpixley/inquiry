@@ -15,9 +15,9 @@ import (
 
 func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, error) {
 	if t.Kind() != reflect.Struct {
-		return "", nil, errors.New(constants.NOT_A_STRUCT_ERROR)
+		return "", nil, errors.New(constants.NotAStructError)
 	} else if t.NumField() == 0 {
-		return "", nil, errors.New(constants.NO_FIELDS_ERROR)
+		return "", nil, errors.New(constants.NoFieldsError)
 	}
 
 	indexes := []models.FieldTagMap{}
@@ -33,11 +33,11 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 		tags := convertToTags(strings.Split(trimAndToLowerStr(field.Tag.Get("inquiry")), ","))
 		for _, tag := range tags {
 			switch tag {
-			case constants.INDEX_TAG:
+			case constants.IndexTag:
 				indexes = append(indexes, models.FieldTagMap{Field: field, Tag: tag})
-			case constants.PRIMARY_KEY_TAG:
+			case constants.PrimaryKeyTag:
 				constraints = append(constraints, models.FieldTagMap{Field: field, Tag: tag})
-			case constants.UNIQUE_TAG:
+			case constants.UniqueTag:
 				if field.Type.Kind() == reflect.Pointer {
 					indexes = append(indexes, models.FieldTagMap{Field: field, Tag: tag})
 				} else {
@@ -105,19 +105,19 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 				builder.WriteString(field.Name)
 				builder.WriteString("' TEXT NULL,")
 			default:
-				return "", nil, errors.New(constants.UNSUPPORTED_FIELD_TYPE_ERROR)
+				return "", nil, errors.New(constants.UnsupportedFileTypeError)
 			}
 		case reflect.String:
 			builder.WriteString("'")
 			builder.WriteString(field.Name)
 			builder.WriteString("' TEXT NOT NULL,")
 		default:
-			return "", nil, errors.New(constants.UNSUPPORTED_FIELD_TYPE_ERROR)
+			return "", nil, errors.New(constants.UnsupportedFileTypeError)
 		}
 	}
 
 	for _, constraint := range constraints {
-		if constraint.Tag == constants.PRIMARY_KEY_TAG {
+		if constraint.Tag == constants.PrimaryKeyTag {
 			builder.WriteString("CONSTRAINT ")
 			builder.WriteString("PK_")
 			builder.WriteString(t.Name())
@@ -145,17 +145,17 @@ func buildCreateTableStatement(t reflect.Type) (string, []models.FieldTagMap, er
 }
 
 func convertToTags(t []string) []models.Tag {
-	tags := []models.Tag{}
-	for _, strT := range t {
+	tags := make([]models.Tag, len(t))
+	for i, strT := range t {
 		switch strT {
 		case "index":
-			tags = append(tags, constants.INDEX_TAG)
+			tags[i] = constants.IndexTag
 		case "primarykey":
-			tags = append(tags, constants.PRIMARY_KEY_TAG)
+			tags[i] = constants.PrimaryKeyTag
 		case "unique":
-			tags = append(tags, constants.UNIQUE_TAG)
+			tags[i] = constants.UniqueTag
 		default:
-			tags = append(tags, constants.NA_TAG)
+			tags[i] = constants.OtherTag
 		}
 	}
 	return tags
@@ -178,7 +178,7 @@ func createTable[T any](tx *sql.Tx) (reflect.Type, error) {
 	for _, index := range indexes {
 		var builder strings.Builder
 		builder.WriteString("CREATE ")
-		if index.Tag == constants.INDEX_TAG {
+		if index.Tag == constants.IndexTag {
 			builder.WriteString("INDEX NonClustered_")
 			builder.WriteString(t.Name())
 			builder.WriteString("_")
@@ -212,12 +212,12 @@ func createTable[T any](tx *sql.Tx) (reflect.Type, error) {
 }
 
 func insert(tx *sql.Tx, statement string, row []string, t reflect.Type) error {
-	args := []any{}
+	args := make([]any, t.NumField())
 	for i := range t.NumField() {
 		if trimmedStr := strings.TrimSpace(row[i]); (trimmedStr == "" || trimmedStr == "null" || trimmedStr == "NULL") && t.Field(i).Type.Kind() == reflect.Pointer {
-			args = append(args, nil)
+			args[i] = nil
 		} else {
-			args = append(args, any(row[i]))
+			args[i] = any(row[i])
 		}
 	}
 
@@ -227,7 +227,7 @@ func insert(tx *sql.Tx, statement string, row []string, t reflect.Type) error {
 
 func insertRows(tx *sql.Tx, csvFilePath string, t reflect.Type, options CsvOptions) error {
 	if _, err := os.Stat(csvFilePath); os.IsNotExist(err) {
-		return errors.New(constants.FILE_PATH_DOES_NOT_EXIST_ERROR)
+		return errors.New(constants.FilePathDoesNotExistError)
 	} else if err != nil {
 		return err
 	}
@@ -283,9 +283,9 @@ func insertRows(tx *sql.Tx, csvFilePath string, t reflect.Type, options CsvOptio
 
 func prepareStatement(t reflect.Type) (string, error) {
 	if t.Kind() != reflect.Struct {
-		return "", errors.New(constants.NOT_A_STRUCT_ERROR)
+		return "", errors.New(constants.NotAStructError)
 	} else if t.NumField() == 0 {
-		return "", errors.New(constants.NO_FIELDS_ERROR)
+		return "", errors.New(constants.NoFieldsError)
 	}
 
 	builder := strings.Builder{}

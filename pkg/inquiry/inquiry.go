@@ -17,7 +17,7 @@ type CsvOptions struct {
 }
 
 /*
-Connect is a function that creates an in-memory SQLite database from a CSV file.
+Connect function creates an in-memory SQLite database from a CSV file.
 It takes the CSV file path as a parameter and returns two things: A pointer to the in-memory SQLite database and an error.
 If no errors occur, the returned error will be nil.
 
@@ -34,7 +34,7 @@ func Connect[T any](csvFilePath string) (*sql.DB, error) {
 	return ConnectWithOptions[T](csvFilePath, options)
 }
 
-// ConnectWithOptions is a function that creates an in-memory SQLite database from a CSV file.
+// ConnectWithOptions function creates an in-memory SQLite database from a CSV file.
 // It takes two parameters: the CSV file path and a CsvOptions struct.
 // It returns two things: A pointer to the in-memory SQLite database and an error.
 // If no errors occur, the returned error will be nil.
@@ -65,7 +65,7 @@ func ConnectWithOptions[T any](csvFilePath string, options CsvOptions) (*sql.DB,
 }
 
 /*
-CreateTable is a function that creates a new table from a CSV file and adds it to an existing SQLite database.
+CreateTable function creates a new table from a CSV file and adds it to an existing SQLite database.
 It takes two parameters: a pointer to the SQLite database and a CSV file path.
 It returns an error. If no errors occur, the returned error will be nil.
 
@@ -82,7 +82,7 @@ func CreateTable[T any](db *sql.DB, csvFilePath string) error {
 	return CreateTableWithOptions[T](db, csvFilePath, options)
 }
 
-// CreateTableWithOptions is a function that creates a new table from a CSV file and adds it to an existing SQLite database.
+// CreateTableWithOptions function creates a new table from a CSV file and adds it to an existing SQLite database.
 // It takes three parameters: a pointer to the SQLite database, a CSV file path, and a CsvOptions struct.
 // It returns an error. If no errors occur, the returned error will be nil.
 func CreateTableWithOptions[T any](db *sql.DB, csvFilePath string, options CsvOptions) error {
